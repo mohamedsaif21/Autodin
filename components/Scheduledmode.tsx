@@ -466,7 +466,7 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
                     fontSize: 13, lineHeight: 1.7, resize: 'vertical',
                     boxSizing: 'border-box', outline: 'none',
                   }}
-                  placeholder={step === 'extracting' ? 'Generating...' : 'Caption will appear here'}
+                  placeholder="Caption will appear here"
                 />
 
                 {generated?.caption && (
