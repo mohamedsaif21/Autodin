@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { LinkedInPostError, publishToLinkedIn } from '@/lib/linkedin';
+import { getPostStatus, markPostPosted } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,22 +17,10 @@ interface ScheduledPost {
 }
 
 const POSTS_FILE = path.join(process.cwd(), 'data', 'scheduled-posts.json');
-const STATUS_FILE = path.join(process.cwd(), 'data', 'post-status.json');
 
 function readPosts(): ScheduledPost[] {
   if (!fs.existsSync(POSTS_FILE)) return [];
   return JSON.parse(fs.readFileSync(POSTS_FILE, 'utf-8'));
-}
-
-function readStatus(): Record<string, any> {
-  if (!fs.existsSync(STATUS_FILE)) return {};
-  return JSON.parse(fs.readFileSync(STATUS_FILE, 'utf-8'));
-}
-
-function writeStatus(status: Record<string, any>) {
-  const dir = path.dirname(STATUS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(STATUS_FILE, JSON.stringify(status, null, 2));
 }
 
 function generatedCaption(post: ScheduledPost) {
@@ -76,18 +65,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const existingStatus = await getPostStatus(post.id);
+
+    if (existingStatus?.status === 'posted') {
+      return Response.json({
+        ok: true,
+        message: 'Post already approved and published',
+      });
+    }
+
     const { postId: linkedinPostId } = await publishToLinkedIn({
       imageUrl: post.posterPath,
       caption: generatedCaption(post),
     });
 
-    const statusMap = readStatus();
-    statusMap[post.id] = {
-      status: 'posted',
-      postedAt: new Date().toISOString(),
-      linkedinPostId: linkedinPostId || null,
-    };
-    writeStatus(statusMap);
+    await markPostPosted(post.id, null, linkedinPostId || null);
 
     return Response.json({
       ok: true,

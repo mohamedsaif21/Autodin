@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
+import { getPostStatus } from '@/lib/supabaseAdmin';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -27,6 +28,8 @@ function requiredEnv() {
     ADMIN_EMAIL: process.env.ADMIN_EMAIL,
     APP_URL: process.env.APP_URL,
     CRON_SECRET: process.env.CRON_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
   };
 
   const missing = Object.entries(env)
@@ -73,6 +76,15 @@ export async function GET() {
       { ok: false, error: "No scheduled post found for today" },
       { status: 404 }
     );
+  }
+
+  const status = await getPostStatus(post.id);
+
+  if (status?.status === 'posted') {
+    return Response.json({
+      ok: true,
+      message: "Today's scheduled post is already posted"
+    });
   }
 
   const caption = generatedCaption(post);

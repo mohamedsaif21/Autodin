@@ -1,27 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { getPostStatus, markPostPosted } from '@/lib/supabaseAdmin';
 
 const POSTS_FILE = path.join(process.cwd(), 'data', 'scheduled-posts.json');
-const STATUS_FILE = path.join(process.cwd(), 'data', 'post-status.json');
 
 // Read scheduled posts from JSON
 function readPosts(): any[] {
   if (!fs.existsSync(POSTS_FILE)) return [];
   const raw = fs.readFileSync(POSTS_FILE, 'utf-8');
   return JSON.parse(raw);
-}
-
-// Read/write persistent status (so "posted" survives server restarts)
-function readStatus(): Record<string, any> {
-  if (!fs.existsSync(STATUS_FILE)) return {};
-  return JSON.parse(fs.readFileSync(STATUS_FILE, 'utf-8'));
-}
-
-function writeStatus(status: Record<string, any>) {
-  const dir = path.dirname(STATUS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(STATUS_FILE, JSON.stringify(status, null, 2));
 }
 
 // Compute live status for each post
@@ -41,14 +29,17 @@ function computeStatus(post: any, statusMap: Record<string, any>): string {
 export async function GET() {
   try {
     const posts = readPosts();
-    const statusMap = readStatus();
+    const statuses = await Promise.all(
+      posts.map(async (post) => [post.id, await getPostStatus(post.id)] as const)
+    );
+    const statusMap = Object.fromEntries(statuses);
     const today = new Date().toISOString().split('T')[0];
 
     const enriched = posts.map(p => ({
       ...p,
       liveStatus: computeStatus(p, statusMap),
       postedAt: statusMap[p.id]?.postedAt || null,
-      linkedinPostId: statusMap[p.id]?.linkedinPostId || null,
+      linkedinPostId: statusMap[p.id]?.linkedinPostId || statusMap[p.id]?.linkedinUrl || null,
     }));
 
     // Sort: today first, then pending by date, then posted, then expired
@@ -167,13 +158,7 @@ export async function PATCH(req: NextRequest) {
   const { postId, linkedinPostId } = await req.json();
 
   try {
-    const statusMap = readStatus();
-    statusMap[postId] = {
-      status: 'posted',
-      postedAt: new Date().toISOString(),
-      linkedinPostId: linkedinPostId || null,
-    };
-    writeStatus(statusMap);
+    await markPostPosted(postId, null, linkedinPostId || null);
     return NextResponse.json({ success: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
