@@ -21,7 +21,7 @@ interface GeneratedCaption {
   caption: string;
 }
 
-type ModalStep = 'idle' | 'extracting' | 'review' | 'posting' | 'done';
+type ModalStep = 'extracting' | 'review' | 'posting' | 'done';
 
 const STATUS_STYLES = {
   today:   { bg: '#071a10', border: '#0d4a20', dot: '#22c55e', label: 'Post Today',  labelColor: '#22c55e' },
@@ -38,7 +38,7 @@ export default function ScheduledMode() {
 
   // Modal state
   const [activePost, setActivePost] = useState<ScheduledPost | null>(null);
-  const [modalStep, setModalStep] = useState<ModalStep>('idle');
+  const [modalStep, setModalStep] = useState<ModalStep>('review');
   const [generated, setGenerated] = useState<GeneratedCaption | null>(null);
   const [modalError, setModalError] = useState('');
 
@@ -97,7 +97,10 @@ export default function ScheduledMode() {
         }),
       });
       const data = await res.json();
-      if (!data.success) throw new Error(data.error || JSON.stringify(data.details));
+
+      if (!data.success) {
+        throw new Error(data.error || JSON.stringify(data.details || data));
+      }
 
       // Mark as posted
       await fetch('/api/scheduled', {
@@ -116,7 +119,7 @@ export default function ScheduledMode() {
 
   function closeModal() {
     setActivePost(null);
-    setModalStep('idle');
+    setModalStep('review');
     setGenerated(null);
     setModalError('');
   }
@@ -128,7 +131,7 @@ export default function ScheduledMode() {
   return (
     <div style={{ maxWidth: 1040 }}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'flex-start',
         justifyContent: 'space-between', marginBottom: 28,
@@ -144,11 +147,11 @@ export default function ScheduledMode() {
           background: '#0c0c18', border: '1px solid #1a1a30',
           color: '#555', fontSize: 13, cursor: 'pointer',
         }}>
-          🔄 Refresh
+          Refresh
         </button>
       </div>
 
-      {/* ── Today's post banner ── */}
+      {/* Today's post banner */}
       {todayPost && (
         <div style={{
           background: 'linear-gradient(135deg, #071a10, #0a2818)',
@@ -156,7 +159,7 @@ export default function ScheduledMode() {
           padding: '20px 24px', marginBottom: 28,
           display: 'flex', alignItems: 'center', gap: 20,
         }}>
-          <div style={{ fontSize: 36 }}>📅</div>
+          <div style={{ fontSize: 36 }}>Today</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: '#22c55e', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
@@ -166,7 +169,7 @@ export default function ScheduledMode() {
               {todayPost.title}
             </div>
             <div style={{ fontSize: 13, color: '#555', marginTop: 3 }}>
-              Scheduled for {todayPost.time} · Click to preview and post
+              Scheduled for {todayPost.time} - Click to preview and post
             </div>
           </div>
           <button onClick={() => openPost(todayPost)} style={{
@@ -175,7 +178,7 @@ export default function ScheduledMode() {
             color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
             whiteSpace: 'nowrap',
           }}>
-            📋 Preview & Post
+            Preview & Post
           </button>
         </div>
       )}
@@ -186,11 +189,11 @@ export default function ScheduledMode() {
           borderRadius: 8, padding: '12px 16px', color: '#f87171',
           fontSize: 13, marginBottom: 20,
         }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
-      {/* ── Posts grid ── */}
+      {/* Posts grid */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#333' }}>
           <LoadingDots /> <div style={{ marginTop: 12, fontSize: 14 }}>Loading scheduled posts...</div>
@@ -211,7 +214,7 @@ export default function ScheduledMode() {
         </div>
       )}
 
-      {/* ── Modal ── */}
+      {/* Modal */}
       {activePost && (
         <PostModal
           post={activePost}
@@ -226,8 +229,6 @@ export default function ScheduledMode() {
     </div>
   );
 }
-
-// ── Post Card ──────────────────────────────────────────────────────────────
 
 function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void }) {
   const style = STATUS_STYLES[post.liveStatus];
@@ -257,7 +258,6 @@ function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void })
         (e.currentTarget as HTMLElement).style.boxShadow = 'none';
       }}
     >
-      {/* Poster thumbnail */}
       <div style={{
         width: '100%', aspectRatio: '1/1',
         background: '#050510', position: 'relative',
@@ -273,7 +273,6 @@ function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void })
             (e.target as HTMLImageElement).parentElement!.style.background = '#0c0c20';
           }}
         />
-        {/* Status badge */}
         <div style={{
           position: 'absolute', top: 10, right: 10,
           background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)',
@@ -290,7 +289,6 @@ function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void })
           </span>
         </div>
 
-        {/* Posted overlay */}
         {post.liveStatus === 'posted' && (
           <div style={{
             position: 'absolute', inset: 0,
@@ -303,30 +301,28 @@ function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void })
               borderRadius: 50, width: 56, height: 56,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 24,
-            }}>✓</div>
+            }}>Done</div>
           </div>
         )}
 
-        {/* Expired overlay */}
         {post.liveStatus === 'expired' && (
           <div style={{
             position: 'absolute', inset: 0,
             background: 'rgba(0,0,0,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32,
-          }}>⏰</div>
+            fontSize: 16, color: '#888',
+          }}>Expired</div>
         )}
       </div>
 
-      {/* Card info */}
       <div style={{ padding: '14px 16px' }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: '#e8e8f0', marginBottom: 4 }}>
           {post.title}
         </div>
-        <div style={{ fontSize: 12, color: '#444' }}>{formattedDate} · {post.time}</div>
+        <div style={{ fontSize: 12, color: '#444' }}>{formattedDate} - {post.time}</div>
         {post.postedAt && (
           <div style={{ fontSize: 11, color: '#38bdf8', marginTop: 4 }}>
-            ✓ Posted {new Date(post.postedAt).toLocaleDateString('en-IN')}
+            Posted {new Date(post.postedAt).toLocaleDateString('en-IN')}
           </div>
         )}
         {isClickable && (
@@ -335,15 +331,13 @@ function PostCard({ post, onOpen }: { post: ScheduledPost; onOpen: () => void })
             borderTop: `1px solid ${style.border}`,
             fontSize: 12, color: style.labelColor, fontWeight: 600,
           }}>
-            {post.liveStatus === 'today' ? '→ Click to post today' : '→ Click to preview'}
+            {post.liveStatus === 'today' ? 'Click to post today' : 'Click to preview'}
           </div>
         )}
       </div>
     </div>
   );
 }
-
-// ── Post Modal ─────────────────────────────────────────────────────────────
 
 function PostModal({ post, step, generated, error, onPost, onClose, onEditCaption }: {
   post: ScheduledPost;
@@ -369,7 +363,6 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
         maxHeight: '90vh', overflow: 'hidden',
         display: 'flex', flexDirection: 'column',
       }}>
-        {/* Modal header */}
         <div style={{
           padding: '20px 24px', borderBottom: '1px solid #111120',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -379,34 +372,32 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
             <div style={{ fontSize: 12, color: '#444', marginTop: 3 }}>
               {new Date(post.date + 'T00:00:00').toLocaleDateString('en-IN', {
                 day: 'numeric', month: 'long', year: 'numeric',
-              })} · {post.time}
+              })} - {post.time}
             </div>
           </div>
           <button onClick={onClose} style={{
             width: 32, height: 32, borderRadius: 8, border: '1px solid #1a1a30',
             background: 'transparent', color: '#555', fontSize: 18,
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>×</button>
+          }}>x</button>
         </div>
 
-        {/* Modal body */}
         <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
 
           {step === 'extracting' && (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <LoadingDots />
               <div style={{ color: '#555', fontSize: 14, marginTop: 14 }}>
-                🧠 Gemini is reading your poster and writing the caption...
+                Gemini is reading your poster and writing the caption...
               </div>
               <div style={{ color: '#333', fontSize: 12, marginTop: 6 }}>
-                Extracting text → understanding context → generating LinkedIn caption
+                Extracting text - understanding context - generating LinkedIn caption
               </div>
             </div>
           )}
 
           {(step === 'review' || step === 'posting' || step === 'done') && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-              {/* Left: poster */}
               <div>
                 <SectionLabel>Poster</SectionLabel>
                 <div style={{
@@ -434,7 +425,6 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
                 )}
               </div>
 
-              {/* Right: caption */}
               <div>
                 <SectionLabel>AI-Generated LinkedIn Caption</SectionLabel>
                 {generated?.occasion && (
@@ -443,7 +433,7 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
                     background: '#0a0a20', border: '1px solid #1a1a35',
                     borderRadius: 6, padding: '6px 10px',
                   }}>
-                    📌 Occasion detected: <strong>{generated.occasion}</strong>
+                    Occasion detected: <strong>{generated.occasion}</strong>
                   </div>
                 )}
 
@@ -452,7 +442,7 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
                     background: '#1a0808', border: '1px solid #3a1010',
                     borderRadius: 8, padding: 12, color: '#f87171',
                     fontSize: 13, marginBottom: 12,
-                  }}>⚠️ {error}</div>
+                  }}>{error}</div>
                 )}
 
                 <textarea
@@ -480,8 +470,7 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
                     background: '#071510', border: '1px solid #0d4020',
                     borderRadius: 10, padding: 16, textAlign: 'center', marginTop: 12,
                   }}>
-                    <div style={{ fontSize: 28 }}>✅</div>
-                    <div style={{ fontWeight: 700, color: '#22c55e', marginTop: 6 }}>
+                    <div style={{ fontWeight: 700, color: '#22c55e' }}>
                       Posted to LinkedIn!
                     </div>
                   </div>
@@ -491,7 +480,6 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
           )}
         </div>
 
-        {/* Modal footer */}
         {(step === 'review' || step === 'posting') && generated && (
           <div style={{
             padding: '16px 24px', borderTop: '1px solid #111120',
@@ -519,7 +507,7 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
               }}>
               {step === 'posting'
                 ? <><LoadingDots color="#38bdf8" /> Posting...</>
-                : '🔗 Post to LinkedIn'}
+                : 'Post to LinkedIn'}
             </button>
           </div>
         )}
@@ -542,8 +530,6 @@ function PostModal({ post, step, generated, error, onPost, onClose, onEditCaptio
     </div>
   );
 }
-
-// ── Setup instructions ─────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
