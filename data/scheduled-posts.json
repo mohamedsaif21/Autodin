@@ -26,7 +26,7 @@
   {
     "id": "post_04",
     "title": "Gandhi Jayanti",
-    "date": "2026-06-05",
+    "date": "2025-10-02",
     "time": "09:00",
     "posterPath": "/posters/scheduled/poster_1780336656005.png",
     "occasion": "Gandhi Jayanti"
@@ -42,23 +42,23 @@
   {
     "id": "post_06",
     "title": "Christmas",
-    "date": "2025-12-25",
-    "time": "09:00",
+    "date": "2026-06-06",
+    "time": "11:00",
     "posterPath": "/posters/scheduled/poster_1780363045629.png",
     "occasion": "Christmas"
   },
   {
     "id": "post_07",
     "title": "New Year's Eve",
-    "date": "2025-12-31",
-    "time": "18:00",
+    "date": "2026-06-07",
+    "time": "10:00",
     "posterPath": "/posters/scheduled/poster_1780363067242.png",
     "occasion": "New Year's Eve"
   },
   {
     "id": "post_08",
     "title": "Raksha Bandhan",
-    "date": "2025-08-09",
+    "date": "2026-06-08",
     "time": "10:00",
     "posterPath": "/posters/scheduled/poster_1780363068706.png",
     "occasion": "Raksha Bandhan"
@@ -66,7 +66,7 @@
   {
     "id": "post_09",
     "title": "Durga Puja",
-    "date": "2025-09-30",
+    "date": "2026-06-09",
     "time": "10:00",
     "posterPath": "/posters/scheduled/poster_1780363070472.png",
     "occasion": "Durga Puja"
@@ -74,7 +74,7 @@
   {
     "id": "post_10",
     "title": "Eid al-Fitr",
-    "date": "2025-03-31",
+    "date": "2026-06-10",
     "time": "09:00",
     "posterPath": "/posters/scheduled/poster_1780363074321.png",
     "occasion": "Eid al-Fitr"
